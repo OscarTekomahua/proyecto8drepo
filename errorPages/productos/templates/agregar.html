@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <title>Agregar Producto</title>
+    <style>
+        .desvanecer {
+            opacity: 0;
+            animation: fadeIn 3.0s forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeInWZoom {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1.0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="col">
+            <div class="row">
+                <div class="col-6 mt-4">
+                    <form method="POST" id="producto_form">
+                        {% csrf_token %}
+                        {{form.as_p}}
+                        <button type="submit" class="btn btn-success">Agregar productos</button>
+                    </form>
+                    <div>
+                        <p id="mensaje"></p>                       
+                    </div>
+                </div>
+                <div class="col-6 mt-4">
+                    <h1>Lista de Productos</h1>
+                    <div class="row" id="productos">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        //Enviar la info del formulario por JS
+        var form = document.getElementById('producto_form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); //No se mande el formulario tradicionalmente
+
+            //Obtener la info del formulario
+
+            let formData = new FormData(this);
+
+            //Conertirla a JSON
+            let jsonData = {};
+            formData.forEach((value,key) => jsonData[key] = value);
+
+            //Enviar los datos al backend asincronamente
+            fetch('/productos/api/post/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToke': getToken()
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('mensaje').innerText = 'Registro exitoso';
+                cargarProductos();
+            })
+            .catch(error => console.error('Error', error))
+        });
+
+        //Funcion para obtener el token
+        function getToken() {
+            let cookieValue = null;
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+                    break;
+                }
+            }
+            return cookieValue;
+        }
+
+        // Usar FETCH
+        function cargarProductos() {
+            // Comunicacion con el endpoint
+            fetch('/productos/api/get')
+            .then(response => response.json())
+            .then(data => {
+                let productosDiv = document.getElementById('productos');
+                productosDiv.innerHTML = '';
+    
+                data.forEach(producto => {
+                    productosDiv.innerHTML += `
+                    <div class="col-3"><strong>${producto.nombre}</strong> - 
+                        Precio: $${producto.precio} - 
+                        <img src="${producto.imagen}" width="150" alt=""></div>
+                    `;
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        cargarProductos();
+    </script>
+
+    <script>
+        document.body.style.animation = 'fadeInWZoom 5.0s forwards';
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                document.body.style.animation = 'fadeOut 5.0s forwards';
+                setTimeout(() => {
+                    window.location.href = this.href;
+                },5000);
+            });
+        });
+    </script>
+</body>
+</html>
